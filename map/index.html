@@ -1,197 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>London Boroughs Map with Average Price</title>
-<style>
-  svg {
-    width: 960px;
-    height: 600px;
-    border: 1px solid #ccc;
-  }
-  .boroughs path {
-    stroke: #fff;
-    stroke-width: 0.5;
-    cursor: pointer;
-  }
-  .tooltip {
-    position: absolute;
-    padding: 5px 10px;
-    background: rgba(0,0,0,0.7);
-    color: #fff;
-    border-radius: 3px;
-    pointer-events: none;
-    font-size: 12px;
-    opacity: 0;
-  }
-  #sliderContainer {
-    margin: 10px;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>London Boroughs Map with Average Price</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<div id="sliderContainer">
-  <input type="range" id="dateSlider" min="0" max="0" value="0">
-  <span id="dateLabel"></span>
-</div>
+  <div id="sliderContainer">
+    <input type="range" id="dateSlider" min="0" max="0" value="0">
+    <span id="dateLabel"></span>
+  </div>
 
-<svg></svg>
-<div class="tooltip"></div>
+  <svg width="960" height="600"></svg>
+  <div class="tooltip"></div>
 
-<script src="https://d3js.org/d3.v5.min.js"></script>
-<script src="https://d3js.org/topojson.v2.min.js"></script>
+  <!-- Load D3 and TopoJSON -->
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://d3js.org/topojson.v2.min.js"></script>
 
-<script>
-const svg = d3.select("svg"),
-      width = +svg.attr("width"),
-      height = +svg.attr("height");
-
-const tooltip = d3.select(".tooltip");
-const slider = d3.select("#dateSlider");
-const dateLabel = d3.select("#dateLabel");
-
-const londonBoroughs = [
-  "Barking and Dagenham","Barnet","Bexley","Brent","Bromley","Camden",
-  "Croydon","Ealing","Enfield","Greenwich","Hackney","Hammersmith and Fulham",
-  "Haringey","Harrow","Havering","Hillingdon","Hounslow","Islington","Kensington and Chelsea",
-  "Kingston upon Thames","Lambeth","Lewisham","Merton","Newham","Redbridge",
-  "Richmond upon Thames","Southwark","Sutton","Tower Hamlets","Waltham Forest","Westminster",
-  "Wandsworth", "City of London"
-];
-
-// Load TopoJSON
-d3.json("london_topo.json").then(topo => {
-  const objectName = Object.keys(topo.objects)[0]; 
-  let geojson = topojson.feature(topo, topo.objects[objectName]);
-  geojson.features = geojson.features.filter(d => londonBoroughs.includes(d.properties.NAME));
-
-  console.log("Boroughs loaded from TopoJSON:", geojson.features.map(d => d.properties.NAME));
-
-  const projection = d3.geoMercator()
-      .center([-0.65, 51.705])
-      .scale(50000)
-      .translate([width/2, height/2]);
-
-  const path = d3.geoPath().projection(projection);
-
-  // Draw borough paths
-  const boroughPaths = svg.append("g")
-      .attr("class", "boroughs")
-    .selectAll("path")
-    .data(geojson.features)
-    .enter().append("path")
-      .attr("d", path)
-      .attr("fill", "#ccc")
-      .attr("stroke", "#fff")
-      .attr("stroke-width", 1)
-      .on("mouseover", function(event,d){
-          if(!d || !d.properties) return;
-          tooltip.transition().duration(200).style("opacity",0.9);
-          tooltip.html(d.properties.NAME)
-                 .style("left",(event.pageX+5)+"px")
-                 .style("top",(event.pageY-20)+"px");
-      })
-      .on("mousemove", function(event,d){
-          if(!d || !d.properties) return;
-          tooltip.style("left",(event.pageX+5)+"px")
-                 .style("top",(event.pageY-20)+"px");
-      })
-      .on("mouseout", function(){
-          tooltip.transition().duration(200).style("opacity",0);
-      });
-
-  // Load CSV
-  d3.csv("london_house_data.csv").then(data => {
-
-    data.forEach(d => {
-      d.AveragePrice = d.AveragePrice ? +d.AveragePrice : null;
-      if(d.Date){
-        const [day,month,year] = d.Date.split("/").map(Number);
-        d.parsedDate = new Date(year<50?2000+year:1900+year, month-1, day);
-      }
-    });
-
-    const dates = Array.from(new Set(data.map(d=>d.parsedDate)))
-                       .filter(d=>d)
-                       .sort((a,b)=>a-b)
-                       .map(d=>{
-                         const day=String(d.getDate()).padStart(2,'0');
-                         const month=String(d.getMonth()+1).padStart(2,'0');
-                         const year=String(d.getFullYear()).slice(-2);
-                         return `${day}/${month}/${year}`;
-                       });
-
-    slider.attr("max", dates.length-1);
-    dateLabel.text(dates[0]);
-
-    const priceByDate = new Map();
-    dates.forEach(date=>{
-      const filtered = data.filter(d=>{
-        const day=String(d.parsedDate.getDate()).padStart(2,'0');
-        const month=String(d.parsedDate.getMonth()+1).padStart(2,'0');
-        const year=String(d.parsedDate.getFullYear()).slice(-2);
-        return `${day}/${month}/${year}`===date;
-      });
-      const mapByRegion = new Map();
-      filtered.forEach(d=>mapByRegion.set(d.RegionName,d.AveragePrice));
-      priceByDate.set(date,mapByRegion);
-    });
-
-    const priceExtent = d3.extent(data,d=>d.AveragePrice).map(v=>v||0);
-    const colorScale = d3.scaleSequential(d3.interpolateBlues).domain(priceExtent);
-
-    // --- LEGEND ---
-    const legendWidth = 200, legendHeight=10;
-    const legendX = width - legendWidth - 20;
-    const legendY = 20;
-
-    const defs = svg.append("defs");
-    const linearGradient = defs.append("linearGradient").attr("id","legend-gradient");
-
-    linearGradient.append("stop").attr("offset","0%").attr("stop-color",colorScale(priceExtent[0]));
-    linearGradient.append("stop").attr("offset","100%").attr("stop-color",colorScale(priceExtent[1]));
-
-    svg.append("rect")
-       .attr("x",legendX)
-       .attr("y",legendY)
-       .attr("width",legendWidth)
-       .attr("height",legendHeight)
-       .style("fill","url(#legend-gradient)")
-       .style("stroke","#000");
-
-    svg.append("text")
-       .attr("x",legendX)
-       .attr("y",legendY-3)
-       .attr("text-anchor","start")
-       .text(Math.round(priceExtent[0]));
-
-    svg.append("text")
-       .attr("x",legendX+legendWidth)
-       .attr("y",legendY-3)
-       .attr("text-anchor","end")
-       .text(Math.round(priceExtent[1]));
-    // --- END LEGEND ---
-
-    function updateMap(date){
-      dateLabel.text(date);
-      const mapByRegion = priceByDate.get(date);
-      boroughPaths.attr("fill", d=>{
-        const price = mapByRegion ? mapByRegion.get(d.properties.NAME) : null;
-        return price ? colorScale(price) : "#ccc";
-      });
-    }
-
-    updateMap(dates[0]);
-
-    slider.on("input", function(){
-      const date = dates[this.value];
-      updateMap(date);
-    });
-
-  }).catch(err=>console.error(err));
-
-}).catch(err=>console.error(err));
-</script>
+  <!-- Load main script -->
+  <script src="js/map.js"></script>
 </body>
 </html>
