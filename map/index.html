@@ -7,21 +7,29 @@
 </head>
 <body>
 
+  <!-- Slider & Play/Pause -->
   <div id="sliderContainer">
     <button id="playPauseBtn">Play</button>
     <input type="range" id="dateSlider" min="0" max="0" value="0">
     <span id="dateLabel"></span>
   </div>
 
-  <svg width="960" height="600"></svg>
+  <!-- Container for map + line chart side by side -->
+  <div id="chartContainer">
+    <!-- Map SVG -->
+    <svg id="mapSvg" width="600" height="600"></svg>
+
+    <!-- Line chart SVG -->
+    <svg id="lineChart" width="600" height="600"></svg>
+  </div>
+
   <div class="tooltip"></div>
 
-  <!-- Load D3 and TopoJSON -->
- <script src="https://d3js.org/d3.v7.min.js"></script>
-
+  <!-- D3 & TopoJSON -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://d3js.org/topojson.v2.min.js"></script>
 
-  <!-- Load main script -->
+  <!-- Main script -->
   <script src="js/map.js"></script>
 </body>
 </html>

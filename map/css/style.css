@@ -1,15 +1,24 @@
+/* Container for side-by-side layout */
+#chartContainer {
+  display: flex;
+  gap: 20px;        /* space between map and chart */
+  justify-content: center;
+  margin: 10px;
+}
+
+/* General SVG styling */
 svg {
-  width: 960px;
-  height: 600px;
   border: 1px solid #ccc;
 }
 
+/* Borough path styling */
 .boroughs path {
   stroke: #fff;
   stroke-width: 0.5;
   cursor: pointer;
 }
 
+/* Tooltip styling */
 .tooltip {
   position: absolute;
   text-align: left;
@@ -23,8 +32,7 @@ svg {
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-
-
+/* Slider container */
 #sliderContainer {
   margin: 10px;
 }
