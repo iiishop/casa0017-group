@@ -490,7 +490,14 @@ d3.json("data/london_topo.json").then(topo => {
         function updateRankChart(currentDateStr) {
             const idx = dates.indexOf(currentDateStr);
             if (idx === -1) return;
-            const dateObj = uniqueDates[idx];
+
+            // Find the matching date object from uniqueDates
+            // We need to ensure we're using the correct Date object that matches currentDateStr
+            const dateObj = uniqueDates.find(d => formatMonthYear(d) === currentDateStr);
+            if (!dateObj) {
+                console.warn('Date object not found for:', currentDateStr);
+                return;
+            }
 
             const currentMap = priceByDate.get(currentDateStr);
             if (!currentMap) return;
@@ -505,13 +512,13 @@ d3.json("data/london_topo.json").then(topo => {
             dots.exit().transition().duration(300).attr("r", 0).remove();
 
             dots.transition().duration(500)
-                .attr("cx", d => rankX(dateObj))
+                .attr("cx", rankX(dateObj))
                 .attr("cy", d => rankY(d.rank));
 
             dots.enter()
                 .append("circle")
                 .attr("class", "rank-dot")
-                .attr("cx", d => rankX(dateObj))
+                .attr("cx", rankX(dateObj))
                 .attr("cy", d => rankY(d.rank))
                 .attr("r", 0)
                 .attr("fill", d => boroughColor(d.borough))
