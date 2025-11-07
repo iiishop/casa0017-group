@@ -2,29 +2,70 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>London Boroughs Map with Average Price</title>
+  <title>London Boroughs Map with Housing Data</title>
   <link rel="stylesheet" href="css/style.css">
+  <!-- Remix Icon CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
 </head>
 <body>
 
-<div id="sliderContainer">
-  <button id="playPauseBtn">Play</button>
-  <input type="range" id="dateSlider" min="0" max="0" value="0">
-  <span id="dateLabel"></span>
-</div>
+  <!-- TOP CONTROLS ROW (FULL WIDTH) -->
+  <div id="topControls">
+    <div id="categoryContainer" aria-label="Data category selector"></div>
 
-<div id="container">
-  <svg id="mapSvg" width="800" height="600"></svg>
-  <div id="rightPanel">
-    <svg id="lineChart" width="600" height="300"></svg>
-    <svg id="rankChart" width="600" height="260"></svg>
+    <!-- Time Controls below the category buttons -->
+    <div id="timeControls">
+      <button id="playPauseBtn" aria-label="Play/Pause animation">Play</button>
+      <input type="range" id="dateSlider" min="0" max="0" value="0">
+      <span id="dateLabel"></span>
+
+      <!-- Hidden category select for syncing within JS -->
+      <select id="categorySelect" style="display:none;">
+        <option value="Average">Average</option>
+        <option value="Detached">Detached</option>
+        <option value="SemiDetached">Semi-Detached</option>
+        <option value="Terraced">Terraced</option>
+        <option value="Flat">Flat</option>
+        <option value="Cash">Cash</option>
+        <option value="Mortgage">Mortgage</option>
+        <option value="SalesVolume">Sales Volume</option>
+      </select>
+    </div>
   </div>
-</div>
 
-<div class="tooltip"></div>
+  <!-- MAP AND CHARTS SECTION -->
+  <div id="visualSection">
 
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<script src="https://d3js.org/topojson.v2.min.js"></script>
-<script src="js/map.js"></script>
+    <div id="mapWrapper">
+      <h3 class="chart-title">London House Market Overview by Borough</h3>
+      <svg id="mapSvg" width="800" height="600"></svg>
+    </div>
+
+    <div id="chartsWrapper">
+      <!-- LINE CHART -->
+      <h3 class="chart-title">Long-term Trends in London’s Housing Market</h3>
+      <svg id="lineChart" width="800" height="300"></svg>
+
+      <!-- RANK CHART -->
+      <h3 class="chart-title">Borough Ranking Over Time (1 = Highest Price / Volume)</h3>
+      <svg id="rankChart" width="800" height="300"></svg>
+    </div>
+
+  </div>
+
+  <!-- INSIGHT SECTION -->
+  <div id="insightContainer" class="insight-box">
+    <h3 class="insight-title">What This Data Tells Us</h3>
+    <p id="insightText"></p>
+  </div>
+
+  <!-- Tooltip for hover interaction -->
+  <div class="tooltip"></div>
+
+  <!-- JS Dependencies -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/topojson@3"></script>
+  <script src="js/map.js"></script>
+
 </body>
 </html>

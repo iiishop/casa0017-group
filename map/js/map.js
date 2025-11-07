@@ -1,3 +1,5 @@
+// IMPORTANT: Full category switching, Sales Volume support, UI control, dynamic legend, rank chart, line chart, and insight updates
+
 const svg = d3.select("#mapSvg"),
       width = +svg.attr("width"),
       height = +svg.attr("height");
@@ -8,6 +10,70 @@ const dateLabel = d3.select("#dateLabel");
 const playPauseBtn = d3.select("#playPauseBtn");
 const formatComma = d3.format(","); // adds thousands separator
 
+const categorySelect = d3.select("#categorySelect"); // hidden select remains
+
+const CATEGORY_META = [
+  { key: "Average",       label: "Average",        icon: "ri-bar-chart-2-line" },
+  { key: "Detached",      label: "Detached",       icon: "ri-home-4-line" },
+  { key: "SemiDetached",  label: "Semi-Detached",  icon: "ri-community-line" },
+  { key: "Terraced",      label: "Terraced",       icon: "ri-home-3-line" },
+  { key: "Flat",          label: "Flat",           icon: "ri-building-2-line" },
+  { key: "Cash",          label: "Cash",           icon: "ri-money-pound-circle-line" },
+  { key: "Mortgage",      label: "Mortgage",       icon: "ri-bank-card-line" },
+  { key: "SalesVolume",   label: "Sales Volume",   icon: "ri-bar-chart-box-line" }
+];
+
+const CATEGORY_INSIGHTS = {
+  "Average": `
+Housing affordability continues to be one of London’s biggest challenges, with average prices rising steadily across nearly all boroughs. 
+Central boroughs such as Kensington & Chelsea, Westminster, and Camden lead significantly due to a combination of international demand and luxury property development. 
+Outer areas like Barking & Dagenham or Croydon, while relatively affordable, are also experiencing upward prices driven by regeneration projects, expansion of transport nodes, and urban spillover. 
+The London Plan aims to deliver more affordable homes and address imbalances, but housing supply still lags behind demand, contributing to structural inequalities.
+  `,
+
+  "Detached": `
+Detached homes represent some of the rarest and highest-value properties in London, usually found in the more suburban boroughs such as Bromley, Barnet, and Richmond upon Thames. 
+These homes are popular with wealthier households seeking privacy and space, yet they also reflect socio-spatial inequality in London’s housing fabric as they are often unaffordable for average residents. 
+Greenbelt preservation and planning restrictions maintain their scarcity, but also limit redevelopment opportunities in low-density areas, creating policy tension with London’s need for denser housing stock.
+  `,
+
+  "SemiDetached": `
+Semi-detached homes are a mainstay of suburban life in London and offer a compromise between privacy and affordability.
+They dominate in boroughs like Harrow, Ealing, and Redbridge, and have seen price growth driven by demand from young families.
+Urban policies now encourage densification in suburban areas, including converting large plots or extending homes to increase housing capacity. 
+However, resistance from long-term residents and green space advocates makes such policies highly contested.
+  `,
+
+  "Terraced": `
+Terraced housing is deeply rooted in London’s Victorian and Edwardian urban form, especially in places like Hackney, Southwark, and Islington. 
+Once considered outdated, these buildings have undergone significant renovation and have become symbols of gentrification and creative-class urbanism. 
+Terraced homes near transit corridors continue to appreciate as London embraces “15-minute city” policies, but this reinforces displacement risks for lower-income groups in revitalized areas.
+  `,
+
+  "Flat": `
+Flats are the dominant new-build form in London’s growth hubs, aligned with dense urban living and transport-oriented development. 
+Regeneration schemes in Stratford, Elephant & Castle, and Wembley are reshaping the skyline with vertical living options. 
+However, issues around cladding safety, building quality, and affordability continue to raise questions about the sustainability and equity of this model, especially in the private rental market.
+  `,
+
+  "Cash": `
+Cash purchases are prevalent in high-value and central locations like Westminster and Kensington, highlighting the role of London as an international capital market. 
+This trend reflects global wealth flows and political stability rather than the underlying housing needs of London’s population. 
+Government policy — such as higher stamp duty on second homes, and upcoming reforms under the Economic Crime Bill — aims to increase transparency and temper speculative real estate investment.
+  `,
+
+  "Mortgage": `
+Mortgage-driven purchases dominate in outer boroughs where prices remain within reach of working families. 
+Rising interest rates and stagnant wages post-pandemic have put pressure on this market, slowing activity among first-time buyers. 
+Government support schemes like shared ownership aim to bridge the affordability gap, but long-term solutions require wage growth and increased social housing provision.
+  `,
+
+  "SalesVolume": `
+Sales volumes mirror confidence in the market and broader economic conditions. 
+Boroughs like Wandsworth and Barnet consistently record high volumes due to diverse housing stock and strong connectivity. 
+Changes in buyer behavior — driven by remote work, immigration, and capital flows — are reshaping London’s property demand map, with more people considering outer London areas or commuter belts.
+  `
+};
 
 const londonBoroughs = [
   "Barking and Dagenham","Barnet","Bexley","Brent","Bromley","Camden",
@@ -18,7 +84,48 @@ const londonBoroughs = [
   "Wandsworth", "City of London"
 ];
 
-// --- Line chart setup ---
+let currentCategory = "Average";
+
+function getCategoryFields(category) {
+  if (category === "Average") {
+    return ["AveragePrice", "1m%Change", "12m%Change"];
+  }
+  if (category === "SalesVolume") {
+    return ["SalesVolume", null, null];
+  }
+  return [`${category}Price`, `${category}1m%Change`, `${category}12m%Change`];
+}
+
+function updateInsight() {
+  const insightKey = currentCategory || "General";
+  d3.select("#insightText").text(CATEGORY_INSIGHTS[insightKey]);
+}
+
+function createCategoryButtons() {
+  const wrap = d3.select("#categoryContainer");
+  wrap.selectAll("*").remove();
+
+  wrap.selectAll(".category-btn")
+    .data(CATEGORY_META)
+    .enter()
+    .append("button")
+    .attr("type", "button")
+    .attr("class", d => `category-btn${d.key === currentCategory ? " active" : ""}`)
+    .attr("data-category", d => d.key)
+    .html(d => `<i class="${d.icon}" aria-hidden="true"></i><span>${d.label}</span>`)
+    .on("click", function (e, d) {
+      currentCategory = d.key;
+      d3.selectAll(".category-btn").classed("active", false);
+      d3.select(this).classed("active", true);
+
+      categorySelect.property("value", currentCategory);
+      categorySelect.dispatch("change");
+      updateInsight();
+    });
+}
+createCategoryButtons();
+
+// Line Chart Setup
 const lineSvg = d3.select("#lineChart"),
       lineWidth = +lineSvg.attr("width"),
       lineHeight = +lineSvg.attr("height"),
@@ -35,7 +142,8 @@ const boroughColor = d3.scaleOrdinal(d3.schemeCategory10).domain(londonBoroughs)
 
 const lineGenerator = d3.line()
     .x(d => xScale(d.parsedDate))
-    .y(d => yScale(d.AveragePrice));
+    .y(d => yScale(d.value))
+    .curve(d3.curveMonotoneX);
 
 function formatMonthYear(date){
   const monthNames = ["January","February","March","April","May","June",
@@ -43,7 +151,7 @@ function formatMonthYear(date){
   return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
 }
 
-// --- Load TopoJSON ---
+// Load TopoJSON
 d3.json("../web/data/london_topo.json").then(topo => {
   const objectName = Object.keys(topo.objects)[0];
   let geojson = topojson.feature(topo, topo.objects[objectName]);
@@ -66,52 +174,105 @@ d3.json("../web/data/london_topo.json").then(topo => {
         .attr("stroke", "#fff")
         .attr("stroke-width", 1);
 
-  // --- Load CSV data ---
+  //== Legend Setup
+  const defs = svg.append("defs");
+  const gradient = defs.append("linearGradient")
+    .attr("id", "legend-gradient")
+    .attr("x1", "0%").attr("x2", "100%")
+    .attr("y1", "0%").attr("y2", "0%");
+  gradient.append("stop").attr("class", "stop-min").attr("offset", "0%").attr("stop-color", "#f0f0f0");
+  gradient.append("stop").attr("class", "stop-max").attr("offset", "100%").attr("stop-color", "#08306b");
+
+  const legendG = svg.append("g").attr("id", "legendG").attr("transform", "translate(50,30)");
+  legendG.append("text").attr("class","legend-title")
+    .attr("x", 0).attr("y", 0).attr("font-size","11px").attr("font-weight","600")
+    .text("Legend");
+  legendG.append("rect")
+    .attr("class","legend-bar")
+    .attr("x", 0).attr("y", 10).attr("width", 220).attr("height", 10)
+    .style("fill", "url(#legend-gradient)").style("stroke", "#000").style("stroke-width", 0.5);
+  legendG.append("text").attr("class","legend-min")
+    .attr("x", 0).attr("y", 30).attr("font-size","10px");
+  legendG.append("text").attr("class","legend-max")
+    .attr("x", 220).attr("y", 30).attr("text-anchor","end").attr("font-size","10px");
+
+  function updateLegend(domain, category) {
+    const [minV, maxV] = domain;
+    const isVolume = (category === "SalesVolume");
+    const isPrice = !isVolume;
+
+    const fmt = v => isPrice ? `£${formatComma(Math.round(v))}` : formatComma(Math.round(v));
+
+    const mapScale = d3.scaleSequential(d3.interpolateBlues).domain([minV, maxV]);
+    defs.select("#legend-gradient .stop-min").attr("stop-color", mapScale(minV));
+    defs.select("#legend-gradient .stop-max").attr("stop-color", mapScale(maxV));
+
+    legendG.select(".legend-title").text(isVolume ? "Legend — Sales Volume" : "Legend — Price");
+    legendG.select(".legend-min").text(fmt(minV));
+    legendG.select(".legend-max").text(fmt(maxV));
+  }
+
+  // Load CSV Data
   d3.csv("../web/data/london_house_data.csv").then(data => {
     data.forEach(d => {
-      d.AveragePrice = d.AveragePrice ? +d.AveragePrice : null;
-      d["1m%Change"] = d["1m%Change"] ? +d["1m%Change"] : null;
-      d["12m%Change"] = d["12m%Change"] ? +d["12m%Change"] : null;
-      if(d.Date){
+      Object.keys(d).forEach(key => {
+        if (key.includes("Price") || key.includes("%Change") || key === "SalesVolume") d[key] = d[key] ? +d[key] : null;
+      });
+      if (d.Date) {
         const [day, month, year] = d.Date.split("/").map(Number);
         d.parsedDate = new Date(year < 50 ? 2000 + year : 1900 + year, month - 1, day);
       }
     });
 
-    const uniqueDates = Array.from(new Set(data.map(d => d.parsedDate))).filter(d => d).sort((a,b)=>a-b);
+    const uniqueDates = Array.from(new Set(data.map(d => d.parsedDate))).filter(d => d).sort((a, b) => a - b);
 
-    const priceByDate = new Map();
-    uniqueDates.forEach(dateObj => {
-      const dateStr = formatMonthYear(dateObj);
-      const filtered = data.filter(d => d.parsedDate.getTime() === dateObj.getTime());
-      const mapByRegion = new Map();
-      filtered.forEach(d => mapByRegion.set(d.RegionName.trim(), {
-        price: d.AveragePrice,
-        change1m: d["1m%Change"],
-        change12m: d["12m%Change"]
-      }));
-      priceByDate.set(dateStr, mapByRegion);
-    });
+    let priceByDate = new Map();
+    function buildPriceByDate() {
+      priceByDate.clear();
+      uniqueDates.forEach(dateObj => {
+        const dateStr = formatMonthYear(dateObj);
+        const [priceField, change1mField, change12mField] = getCategoryFields(currentCategory);
+        const filtered = data.filter(d => d.parsedDate.getTime() === dateObj.getTime());
+        const mapByRegion = new Map();
+        filtered.forEach(d => mapByRegion.set(d.RegionName.trim(), {
+          price: d[priceField],
+          change1m: d[change1mField],
+          change12m: d[change12mField],
+          parsedDate: d.parsedDate
+        }));
+        priceByDate.set(dateStr, mapByRegion);
+      });
+    }
+
+    buildPriceByDate();
 
     const dates = Array.from(priceByDate.keys());
     slider.attr("max", dates.length - 1);
     dateLabel.text(dates[0]);
 
-    const boroughData = d3.groups(data.filter(d => d.AveragePrice), d => d.RegionName.trim());
+    function getBoroughDataForCategory() {
+      const [priceField] = getCategoryFields(currentCategory);
+      return d3.groups(data.filter(d => d[priceField] != null), d => d.RegionName.trim());
+    }
+    let boroughData = getBoroughDataForCategory();
 
     xScale.domain(d3.extent(uniqueDates));
-    yScale.domain([0, d3.max(data, d => d.AveragePrice)]);
 
-    // --- Axes ---
+    function updateLineChartYScale() {
+      const [priceField] = getCategoryFields(currentCategory);
+      yScale.domain([0, d3.max(data, d => d[priceField]) || 1]);
+      lineG.select(".y-axis").call(d3.axisLeft(yScale));
+    }
+
     lineG.append("g").attr("class","x-axis")
         .attr("transform", `translate(0,${chartHeight})`)
         .call(d3.axisBottom(xScale).tickFormat(d3.timeFormat("%b %Y")))
         .selectAll("text").attr("transform","rotate(-45)").style("text-anchor","end");
 
-    lineG.append("g").attr("class","y-axis").call(d3.axisLeft(yScale));
+    lineG.append("g").attr("class","y-axis");
+    updateLineChartYScale();
 
-    // --- Draw lines ---
-    const linePaths = lineG.selectAll("path.line")
+    let linePaths = lineG.selectAll("path.line")
       .data(boroughData)
       .enter().append("path")
         .attr("class","line")
@@ -119,145 +280,153 @@ d3.json("../web/data/london_topo.json").then(topo => {
         .attr("stroke", d => boroughColor(d[0]))
         .attr("stroke-width",2)
         .attr("data-borough", d => d[0])
-        .attr("d", d => lineGenerator(d[1].sort((a,b)=>a.parsedDate-b.parsedDate)));
+        .attr("d", d => {
+          const [priceField] = getCategoryFields(currentCategory);
+          const series = d[1].sort((a, b) => a.parsedDate - b.parsedDate)
+                            .map(p => ({ parsedDate: p.parsedDate, value: p[priceField] }));
+          return lineGenerator(series);
+        });
 
-    const priceExtent = d3.extent(data, d => d.AveragePrice);
-    if(!priceExtent[0] || !priceExtent[1] || priceExtent[0]===priceExtent[1]) priceExtent[1]=priceExtent[0]+1;
-    const colorScale = d3.scaleSequential(d3.interpolateBlues).domain(priceExtent);
+    function updateLineChart() {
+      const [priceField] = getCategoryFields(currentCategory);
+      boroughData = getBoroughDataForCategory();
+      yScale.domain([0, d3.max(data, d => d[priceField]) || 1]);
+      lineG.select(".y-axis").call(d3.axisLeft(yScale));
 
-    // --- Legend ---
-    const defs = svg.append("defs");
-    const linearGradient = defs.append("linearGradient").attr("id","legend-gradient");
-    linearGradient.append("stop").attr("offset","0%").attr("stop-color",colorScale(priceExtent[0]));
-    linearGradient.append("stop").attr("offset","100%").attr("stop-color",colorScale(priceExtent[1]));
-    svg.append("rect").attr("x",50).attr("y",50).attr("width",200).attr("height",10).style("fill","url(#legend-gradient)").style("stroke","#000");
-svg.append("text").attr("x",50).attr("y",45)
-   .attr("text-anchor","start").attr("font-size","10px")
-   .text(formatComma(Math.round(priceExtent[0])));
+      linePaths = lineG.selectAll("path.line")
+        .data(boroughData, d => d[0])
+        .join("path")
+          .attr("class","line")
+          .attr("fill","none")
+          .attr("stroke", d => boroughColor(d[0]))
+          .attr("stroke-width",2)
+          .attr("data-borough", d => d[0])
+          .attr("d", d => {
+            const series = d[1].sort((a, b) => a.parsedDate - b.parsedDate)
+                              .map(p => ({ parsedDate: p.parsedDate, value: p[priceField] }));
+            return lineGenerator(series);
+          });
+    }
 
-svg.append("text").attr("x",250).attr("y",45)
-   .attr("text-anchor","end").attr("font-size","10px")
-   .text(formatComma(Math.round(priceExtent[1])));
-
-    // --- Map update ---
     let currentMapByRegion;
-    function updateMap(dateStr){
+    let currentMapColorScale = null;
+    let isAnimating = false;
+
+    function updateMap(dateStr, disableTransition = false) {
       currentMapByRegion = priceByDate.get(dateStr);
       dateLabel.text(dateStr);
-      boroughPaths.transition().duration(500).attr("fill", d => {
-        const regionData = currentMapByRegion ? currentMapByRegion.get(d.properties.NAME.trim()) : null;
-        return regionData?.price ? colorScale(regionData.price) : "#ccc";
-      });
+
+      const values = Array.from(currentMapByRegion.values()).map(d => d.price).filter(d => d != null && isFinite(d));
+      const mapExtent = values.length ? d3.extent(values) : [0, 1];
+
+      const mapColorScale = d3.scaleSequential(d3.interpolateBlues).domain(mapExtent);
+      currentMapColorScale = mapColorScale;
+
+      const fillColor = d => {
+        const regionData = currentMapByRegion.get(d.properties.NAME.trim());
+        return regionData?.price != null ? mapColorScale(regionData.price) : "#ccc";
+      };
+
+      if (disableTransition) {
+        boroughPaths.attr("fill", fillColor);
+      } else {
+        boroughPaths.transition().duration(500).attr("fill", fillColor);
+      }
+
+      updateLegend(mapExtent, currentCategory);
     }
 
-    // --- Tooltip + highlight functions ---
-    const chartTooltip = d3.select("body").append("div").attr("class","tooltip")
-        .style("opacity",0).style("position","absolute");
+    const chartTooltip = d3.select("body").append("div").attr("class", "tooltip")
+        .style("opacity", 0).style("position", "absolute");
 
     function highlightAll(borough, event = null, d = null) {
-  // --- Map highlight ---
-  boroughPaths.attr("fill", m => {
-    const regionData = currentMapByRegion ? currentMapByRegion.get(m.properties.NAME.trim()) : null;
-    return m.properties.NAME.trim() === borough ? "#ff7f0e" : regionData?.price ? colorScale(regionData.price) : "#ccc";
-  });
+      boroughPaths.attr("fill", m => {
+        const regionData = currentMapByRegion ? currentMapByRegion.get(m.properties.NAME.trim()) : null;
+        if (m.properties.NAME.trim() === borough) return "#ff7f0e";
+        return (regionData?.price != null && currentMapColorScale) ? currentMapColorScale(regionData.price) : "#ccc";
+      });
+      linePaths.attr("stroke-width", l => l[0] === borough ? 4 : 2)
+               .attr("opacity", l => l[0] === borough ? 1 : 0.3);
+      rankG.selectAll(".rank-line").attr("stroke-width", r => r[0] === borough ? 3 : 1.5)
+                                    .attr("opacity", r => r[0] === borough ? 1 : 0.2);
+      rankG.selectAll(".rank-dot").attr("r", r => r.borough === borough ? 6 : 4);
 
-  // --- Line chart highlight ---
-  linePaths.attr("stroke-width", l => l[0] === borough ? 4 : 1.5)
-           .attr("opacity", l => l[0] === borough ? 1 : 0.3);
+      if (event && d) {
+        const [priceField, change1mField, change12mField] = getCategoryFields(currentCategory);
+        chartTooltip.transition().duration(200).style("opacity", 0.9);
 
-  // --- Rank chart highlight ---
-  rankG.selectAll(".rank-line").attr("stroke-width", r => r[0] === borough ? 3 : 1.5)
-                                .attr("opacity", r => r[0] === borough ? 1 : 0.15);
-  rankG.selectAll(".rank-dot").attr("r", r => r.borough === borough ? 6 : 4);
+        const value = d.price ?? d.value ?? null;
+        const c1 = d.change1m ?? (change1mField ? d[change1mField] : null);
+        const c12 = d.change12m ?? (change12mField ? d[change12mField] : null);
+        const when = d.parsedDate ? formatMonthYear(d.parsedDate) : (typeof d.date === "object" ? formatMonthYear(d.date) : dateLabel.text());
 
-  // --- Tooltip ---
-  if (event && d) {
-    chartTooltip.transition().duration(200).style("opacity", 0.9);
-
-    if (d.AveragePrice) { // line chart
-      chartTooltip.html(`<strong>${borough}</strong><br>
-        📅 ${formatMonthYear(d.parsedDate)}<br>
-        🏠 Avg Price: £${formatComma(d.AveragePrice)}<br>
-        📈 1m change: ${d["1m%Change"] != null ? d["1m%Change"].toFixed(1) + "%" : "No data"}<br>
-        📈 12m change: ${d["12m%Change"] != null ? d["12m%Change"].toFixed(1) + "%" : "No data"}`);
-    } else if (d.rank) { // rank chart
-      chartTooltip.html(`<strong>${borough}</strong><br>
-        🏠 Avg Price: £${d.price ? formatComma(d.price) : "N/A"}<br>
-        Rank: ${d.rank}`);
-    } else { // map
-      chartTooltip.html(`<strong>${borough}</strong><br>
-        🏠 Avg Price: ${d?.price ? "£" + formatComma(d.price) : "N/A"}<br>
-        📈 1m change: ${d?.change1m != null ? d.change1m.toFixed(1) + "%" : "No data"}<br>
-        📈 12m change: ${d?.change12m != null ? d.change12m.toFixed(1) + "%" : "No data"}`);
+        chartTooltip.html(
+          `<strong>${borough}</strong><br>
+          📅 ${when}<br>
+          ${
+            currentCategory === "SalesVolume"
+              ? `🏠 Sales: ${value != null ? formatComma(value) : "N/A"}`
+              : `🏠 Price: ${value != null ? "£" + formatComma(value) : "N/A"}<br>
+                 📈 1m change: ${c1 != null ? (+c1).toFixed(1) + "%" : "No data"}<br>
+                 📉 12m change: ${c12 != null ? (+c12).toFixed(1) + "%" : "No data"}`
+          }`
+        );
+        chartTooltip.style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+      }
     }
 
-    chartTooltip.style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY - 28) + "px");
-  }
-}
-
-
-    function resetAllHighlight(){
+    function resetAllHighlight() {
       boroughPaths.attr("fill", d => {
         const regionData = currentMapByRegion ? currentMapByRegion.get(d.properties.NAME.trim()) : null;
-        return regionData?.price ? colorScale(regionData.price) : "#ccc";
+        return (regionData?.price != null && currentMapColorScale) ? currentMapColorScale(regionData.price) : "#ccc";
       });
       linePaths.attr("stroke-width", 2).attr("opacity", 1);
       rankG.selectAll(".rank-line").attr("stroke-width", 1.5).attr("opacity", 0.5);
       rankG.selectAll(".rank-dot").attr("r", 4);
-      chartTooltip.transition().duration(200).style("opacity",0);
+      chartTooltip.transition().duration(200).style("opacity", 0);
     }
 
-    // --- Draw line chart circles ---
-    boroughData.forEach(([borough, values])=>{
-      lineG.selectAll(`.circle-${borough.replace(/\s/g,"")}`)
-        .data(values)
-        .enter()
-        .append("circle")
-        .attr("class",`circle-${borough.replace(/\s/g,"")}`)
-        .attr("cx", d=>xScale(d.parsedDate))
-        .attr("cy", d=>yScale(d.AveragePrice))
-        .attr("r",5)
-        .attr("fill","transparent")
-        .attr("pointer-events","all")
-        .on("mouseover", function(event,d){ highlightAll(borough, event, d); })
-        .on("mousemove", function(event){ chartTooltip.style("left",(event.pageX+10)+"px").style("top",(event.pageY-28)+"px"); })
-        .on("mouseout", resetAllHighlight);
-    });
-
-    // --- Map hover ---
-    boroughPaths.on("mouseover", (event,d)=>{
+    boroughPaths.on("mouseover", (event, d) => {
         const borough = d.properties.NAME.trim();
-        const regionData = currentMapByRegion ? currentMapByRegion.get(borough) : {};
+        const regionData = currentMapByRegion.get(borough);
         highlightAll(borough, event, regionData);
       })
-      .on("mousemove", (event)=>chartTooltip.style("left",(event.pageX+10)+"px").style("top",(event.pageY-28)+"px"))
+      .on("mousemove", (event) => chartTooltip.style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 28) + "px"))
       .on("mouseout", resetAllHighlight);
 
     updateMap(dates[0]);
 
-    slider.on("input", function(){ updateMap(dates[this.value]); updateRankChart(dates[this.value]); });
+    slider.on("input", function () {
+      updateMap(dates[this.value], !isAnimating);
+      updateRankChart(dates[this.value]);
+    });
 
-    let intervalId=null;
-    playPauseBtn.on("click", function(){
-      if(intervalId){ clearInterval(intervalId); intervalId=null; playPauseBtn.text("Play"); }
-      else{
+    let intervalId = null;
+    playPauseBtn.on("click", function () {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+        isAnimating = false;
+        playPauseBtn.text("Play");
+      } else {
         playPauseBtn.text("Pause");
-        intervalId=setInterval(()=>{
-          let currentValue=+slider.property("value");
-          let nextValue=currentValue+1;
-          if(nextValue>+slider.attr("max")) nextValue=0;
-          slider.property("value",nextValue);
-          updateMap(dates[nextValue]);
+        isAnimating = true;
+        intervalId = setInterval(() => {
+          let currentValue = +slider.property("value");
+          let nextValue = currentValue + 1;
+          if (nextValue > +slider.attr("max")) nextValue = 0;
+          slider.property("value", nextValue);
+          updateMap(dates[nextValue], true);
           updateRankChart(dates[nextValue]);
-        },100);
+        }, 100);
       }
     });
 
-    // ================= RANK CHART =================
+    // Rank Chart
     const rankSvg = d3.select("#rankChart"),
           rankWidth = +rankSvg.attr("width"),
-          rankHeight = +rankSvg.attr          ("height"),
+          rankHeight = +rankSvg.attr("height"),
           rankMargin = { top: 40, right: 60, bottom: 50, left: 60 },
           rankChartWidth = rankWidth - rankMargin.left - rankMargin.right,
           rankChartHeight = rankHeight - rankMargin.top - rankMargin.bottom;
@@ -265,30 +434,7 @@ svg.append("text").attr("x",250).attr("y",45)
     const rankG = rankSvg.append("g")
         .attr("transform", `translate(${rankMargin.left},${rankMargin.top})`);
 
-    rankSvg.append("text")
-      .attr("x", rankWidth / 2)
-      .attr("y", 20)
-      .attr("text-anchor", "middle")
-      .style("font-size", "16px")
-      .style("font-weight", "bold")
-      .text("Borough Rank Over Time (X = Time, Y = Rank; 1 = Top)");
-
-    const dateStrs = uniqueDates.map(d => formatMonthYear(d));
-    const rankOverTime = dateStrs.map((dateStr, idx) => {
-      const map = priceByDate.get(dateStr);
-      if (!map) return [];
-      const sorted = Array.from(map.entries())
-        .filter(([_, val]) => val.price)
-        .sort((a, b) => b[1].price - a[1].price)
-        .map(([borough, val], i) => ({ date: uniqueDates[idx], borough, rank: i + 1, price: val.price }));
-      return sorted;
-    });
-
-    const rankDataByBorough = d3.rollup(
-      rankOverTime.flat(),
-      v => v.map(d => ({ date: d.date, rank: d.rank, price: d.price })),
-      d => d.borough
-    );
+ 
 
     const rankX = d3.scaleTime()
       .domain(d3.extent(uniqueDates))
@@ -301,16 +447,36 @@ svg.append("text").attr("x",250).attr("y",45)
     rankG.append("g")
       .attr("transform", `translate(0,${rankChartHeight})`)
       .call(d3.axisBottom(rankX).ticks(Math.min(10, uniqueDates.length)).tickFormat(d3.timeFormat("%b %Y")))
-      .selectAll("text").attr("transform","rotate(-45)").style("text-anchor","end");
+      .selectAll("text").attr("transform", "rotate(-45)").style("text-anchor", "end");
 
-    const rankTicks = d3.range(1, londonBoroughs.length + 1, 5);
-    rankG.append("g")
-      .call(d3.axisLeft(rankY).tickValues(rankTicks).tickFormat(d3.format("d")));
+    rankG.append("g").call(d3.axisLeft(rankY).tickValues(d3.range(1, londonBoroughs.length + 1, 5)).tickFormat(d3.format("d")));
 
     const rankLine = d3.line()
       .x(d => rankX(d.date))
       .y(d => rankY(d.rank))
       .curve(d3.curveMonotoneX);
+
+    function buildRankData() {
+      const [priceField] = getCategoryFields(currentCategory);
+      const dateStrs = uniqueDates.map(d => formatMonthYear(d));
+      const rankOverTime = dateStrs.map((dateStr, idx) => {
+        const map = priceByDate.get(dateStr);
+        if (!map) return [];
+        const sorted = Array.from(map.entries())
+          .filter(([_, val]) => val.price != null)
+          .sort((a, b) => b[1].price - a[1].price)
+          .map(([borough, val], i) => ({ date: uniqueDates[idx], borough, rank: i + 1, price: val.price }));
+        return sorted;
+      });
+
+      return d3.rollup(
+        rankOverTime.flat(),
+        v => v.map(d => ({ date: d.date, rank: d.rank, price: d.price })),
+        d => d.borough
+      );
+    }
+
+    let rankDataByBorough = buildRankData();
 
     rankG.selectAll(".rank-line")
       .data(rankDataByBorough)
@@ -331,7 +497,7 @@ svg.append("text").attr("x",250).attr("y",45)
       if (!currentMap) return;
 
       const rankData = Array.from(currentMap, ([borough, val]) => ({ borough, price: val.price }))
-        .filter(d => d.price)
+        .filter(d => d.price != null)
         .sort((a, b) => b.price - a.price)
         .map((d, i) => ({ borough: d.borough, rank: i + 1, price: d.price }));
 
@@ -352,14 +518,31 @@ svg.append("text").attr("x",250).attr("y",45)
         .attr("fill", d => boroughColor(d.borough))
         .attr("stroke", "#fff")
         .attr("stroke-width", 1)
-        .on("mouseover", (event,d)=>highlightAll(d.borough, event, d))
-        .on("mousemove", (event)=>chartTooltip.style("left",(event.pageX+10)+"px").style("top",(event.pageY-28)+"px"))
+        .on("mouseover", (event, d) => highlightAll(d.borough, event, d))
+        .on("mousemove", (event) => chartTooltip.style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 28) + "px"))
         .on("mouseout", resetAllHighlight)
         .transition().duration(400).attr("r", 4);
     }
 
     updateRankChart(dates[0]);
 
-  }).catch(err=>console.error("CSV load error:",err));
-}).catch(err=>console.error("TopoJSON load error:",err));
+    categorySelect.on("change", function () {
+      currentCategory = this.value;
+      buildPriceByDate();
+      updateLineChart();
+      updateMap(dates[+slider.property("value")]);
 
+      rankDataByBorough = buildRankData();
+      rankG.selectAll(".rank-line")
+        .data(rankDataByBorough)
+        .attr("d", ([, data]) => rankLine(data));
+      updateRankChart(dates[+slider.property("value")]);
+
+      updateInsight();
+    });
+
+  }).catch(err => console.error("CSV load error:", err));
+}).catch(err => console.error("TopoJSON load error:", err));
+
+// Initial insight update
+updateInsight();
