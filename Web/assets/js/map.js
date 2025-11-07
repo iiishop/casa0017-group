@@ -482,12 +482,12 @@ d3.json(`${API_BASE}/map/geojson`).then(topo => {
 
                     chartTooltip.html(
                         `<strong>${borough}</strong><br>
-          📅 ${when}<br>
+          Date: ${when}<br>
           ${currentCategory === "SalesVolume"
-                            ? `🏠 Sales: ${value != null ? formatComma(value) : "N/A"}`
-                            : `🏠 Price: ${value != null ? "£" + formatComma(value) : "N/A"}<br>
-                 📈 1m change: ${c1 != null ? (+c1).toFixed(1) + "%" : "No data"}<br>
-                 📉 12m change: ${c12 != null ? (+c12).toFixed(1) + "%" : "No data"}`
+                            ? `Sales: ${value != null ? formatComma(value) : "N/A"}`
+                            : `Price: ${value != null ? "£" + formatComma(value) : "N/A"}<br>
+                 1m change: ${c1 != null ? (+c1).toFixed(1) + "%" : "No data"}<br>
+                 12m change: ${c12 != null ? (+c12).toFixed(1) + "%" : "No data"}`
                         }`
                     );
                     chartTooltip.style("left", (event.pageX + 10) + "px")

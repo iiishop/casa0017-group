@@ -67,20 +67,20 @@ app.use((err, req, res, next) => {
 async function startServer() {
     try {
         // 预加载房价数据
-        console.log('🔧 正在初始化服务器...');
+        console.log('正在初始化服务器...');
         const csvPath = path.join(__dirname, 'data', 'london_house_data.csv');
         await housingDataCache.load(csvPath);
 
         // 启动 HTTP 服务
         app.listen(PORT, () => {
             console.log('='.repeat(60));
-            console.log(`🚀 Server is running on http://localhost:${PORT}`);
+            console.log(`Server is running on http://localhost:${PORT}`);
             console.log('='.repeat(60));
-            console.log('� API Documentation:');
-            console.log(`  📖 Swagger UI: http://localhost:${PORT}/api-docs`);
-            console.log(`  📄 JSON Spec:  http://localhost:${PORT}/api-docs.json`);
+            console.log('API Documentation:');
+            console.log(`  Swagger UI: http://localhost:${PORT}/api-docs`);
+            console.log(`  JSON Spec:  http://localhost:${PORT}/api-docs.json`);
             console.log('='.repeat(60));
-            console.log('�📡 Available API endpoints:');
+            console.log('Available API endpoints:');
             console.log(`  GET  http://localhost:${PORT}/api/data/`);
             console.log(`  GET  http://localhost:${PORT}/api/data/map/geojson`);
             console.log(`  GET  http://localhost:${PORT}/api/data/housing/query`);
@@ -91,11 +91,11 @@ async function startServer() {
             console.log(`  GET  http://localhost:${PORT}/api/data/boroughs`);
             console.log(`  GET  http://localhost:${PORT}/api/data/stats`);
             console.log('='.repeat(60));
-            console.log(`🌐 Frontend available at: http://localhost:${PORT}`);
+            console.log(`Frontend available at: http://localhost:${PORT}`);
             console.log('='.repeat(60));
         });
     } catch (error) {
-        console.error('❌ Failed to start server:', error);
+        console.error('Failed to start server:', error);
         process.exit(1);
     }
 }

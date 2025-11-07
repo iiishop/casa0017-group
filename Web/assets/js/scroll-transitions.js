@@ -30,7 +30,7 @@
      * 初始化
      */
     function init() {
-        console.log('🎬 Initializing true fullscreen breakout...');
+        console.log('Initializing true fullscreen breakout...');
 
         CONFIG.sections.forEach(sectionId => {
             const section = document.getElementById(sectionId);
@@ -48,7 +48,7 @@
             createDebugPanel();
         }
 
-        console.log('✅ Fullscreen breakout initialized');
+        console.log('Fullscreen breakout initialized');
     }
 
     /**
@@ -282,7 +282,7 @@
                 if (!sectionData.contentMoved) {
                     moveContentToBreakout(id, contentWrapper, breakoutContainer);
                     sectionData.contentMoved = true;
-                    console.log(`📦 ${id} content moved to breakout`);
+                    console.log(`${id} content moved to breakout`);
                 }
 
                 // 移除退出动画类
@@ -291,7 +291,7 @@
                 breakoutContainer.style.display = 'block';
                 // 隐藏原内容
                 contentWrapper.classList.add('has-breakout');
-                console.log(`🚀 ${id} entered stage ${newStage}`);
+                console.log(`${id} entered stage ${newStage}`);
             } else {
                 // 添加退出动画
                 breakoutContainer.classList.add('exiting');
@@ -300,7 +300,7 @@
                 if (sectionData.contentMoved) {
                     moveContentBack(id, contentWrapper, breakoutContainer);
                     sectionData.contentMoved = false;
-                    console.log(`📦 ${id} content moved back`);
+                    console.log(`${id} content moved back`);
                 }
 
                 // 隐藏全屏容器
@@ -310,7 +310,7 @@
                 }, 400); // 等待退出动画完成
                 // 显示原内容
                 contentWrapper.classList.remove('has-breakout');
-                console.log(`⬅️  ${id} exited breakout`);
+                console.log(`${id} exited breakout`);
             }
         }
     }    /**
@@ -320,7 +320,7 @@
         const panel = document.createElement('div');
         panel.className = 'scroll-debug active';
 
-        let html = '<div class="debug-item" style="border-bottom: 2px solid #fff; padding-bottom: 8px; margin-bottom: 8px;"><strong>🚀 Breakout Debug</strong></div>';
+        let html = '<div class="debug-item" style="border-bottom: 2px solid #fff; padding-bottom: 8px; margin-bottom: 8px;"><strong>Breakout Debug</strong></div>';
 
         CONFIG.sections.forEach(sectionId => {
             html += `

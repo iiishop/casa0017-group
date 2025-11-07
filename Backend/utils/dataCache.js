@@ -34,7 +34,7 @@ class HousingDataCache {
      * @returns {Promise<void>}
      */
     async load(filePath) {
-        console.log('🔄 开始加载 CSV 数据...');
+        console.log('开始加载 CSV 数据...');
         const startTime = Date.now();
 
         return new Promise((resolve, reject) => {
@@ -46,7 +46,7 @@ class HousingDataCache {
                 .pipe(csv())
                 .on('headers', (headers) => {
                     this.metadata.columns = headers;
-                    console.log(`📋 检测到 ${headers.length} 个列`);
+                    console.log(`检测到 ${headers.length} 个列`);
                 })
                 .on('data', (data) => {
                     // 转换日期为标准格式
@@ -80,16 +80,16 @@ class HousingDataCache {
                     this.loadTime = new Date();
 
                     const duration = Date.now() - startTime;
-                    console.log('✅ 数据加载完成！');
-                    console.log(`   📊 总行数: ${this.metadata.totalRows.toLocaleString()}`);
-                    console.log(`   📅 日期范围: ${this.metadata.minDate} 到 ${this.metadata.maxDate}`);
-                    console.log(`   🏘️  区域数量: ${this.metadata.regions.length}`);
-                    console.log(`   ⏱️  加载耗时: ${duration}ms`);
+                    console.log('数据加载完成！');
+                    console.log(`   总行数: ${this.metadata.totalRows.toLocaleString()}`);
+                    console.log(`   日期范围: ${this.metadata.minDate} 到 ${this.metadata.maxDate}`);
+                    console.log(`   区域数量: ${this.metadata.regions.length}`);
+                    console.log(`   加载耗时: ${duration}ms`);
 
                     resolve();
                 })
                 .on('error', (error) => {
-                    console.error('❌ CSV 加载失败:', error);
+                    console.error('CSV 加载失败:', error);
                     reject(error);
                 });
         });
@@ -230,7 +230,7 @@ class HousingDataCache {
      * 重新加载数据
      */
     async reload(filePath) {
-        console.log('🔄 重新加载数据...');
+        console.log('重新加载数据...');
         this.rawData = [];
         this.indexes = {
             byDate: new Map(),

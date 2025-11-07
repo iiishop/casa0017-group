@@ -165,12 +165,12 @@
             <strong>${borough}</strong><br>
             <strong>Suitability Score: ${score.toFixed(1)}/100</strong><br>
             <hr style="margin: 5px 0; border-color: rgba(255,255,255,0.3);">
-            📍 Commute: ${metrics.commute}/100<br>
-            🚇 Transport: ${metrics.transport}/100<br>
-            🌳 Parks: ${metrics.parks}/100<br>
-            🌤️ Air Quality: ${metrics.air}/100<br>
-            🎓 Schools: ${metrics.school}/100<br>
-            🌍 Diversity: ${metrics.diversity}/100
+            Commute: ${metrics.commute}/100<br>
+            Transport: ${metrics.transport}/100<br>
+            Parks: ${metrics.parks}/100<br>
+            Air Quality: ${metrics.air}/100<br>
+            Schools: ${metrics.school}/100<br>
+            Diversity: ${metrics.diversity}/100
           `)
                     .style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 28) + "px");

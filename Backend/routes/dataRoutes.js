@@ -474,7 +474,7 @@ function loadBoroughsData() {
                     boroughsIndexMap.set(borough.slug, borough);
                 });
 
-                console.log(`📦 Borough data cached: ${jsonData.length} boroughs loaded`);
+                console.log(`Borough data cached: ${jsonData.length} boroughs loaded`);
                 resolve(jsonData);
             } catch (parseErr) {
                 reject(parseErr);
