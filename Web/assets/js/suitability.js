@@ -2,6 +2,9 @@
 // This script uses housing data to calculate borough suitability based on user preferences
 
 (function () {
+    // API Configuration
+    const API_BASE = 'http://localhost:3000/api/data';
+    
     const svg = d3.select(".suitability-map svg");
     const tooltip = d3.select(".suitability-tooltip");
 
@@ -121,8 +124,8 @@
         }
     }
 
-    // Load TopoJSON and set up map
-    d3.json("data/london_topo.json").then(topo => {
+    // Load TopoJSON from backend API and set up map
+    d3.json(`${API_BASE}/map/geojson`).then(topo => {
         const objectName = Object.keys(topo.objects)[0];
         let geojson = topojson.feature(topo, topo.objects[objectName]);
         geojson.features = geojson.features.filter(d =>
@@ -249,6 +252,10 @@
             }
         });
 
-    }).catch(err => console.error("Error loading TopoJSON:", err));
+    })
+    .catch(err => {
+        console.error("Error loading TopoJSON:", err);
+        alert("Failed to load map data for suitability analysis. Please ensure the backend server is running.");
+    });
 
 })();

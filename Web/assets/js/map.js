@@ -1,5 +1,8 @@
 // IMPORTANT: Full category switching, Sales Volume support, UI control, dynamic legend, rank chart, line chart, and insight updates
 
+// API Configuration
+const API_BASE = 'http://localhost:3000/api/data';
+
 const svg = d3.select("#mapSvg");
 // Use viewBox dimensions for consistent scaling
 const width = 800;
@@ -153,8 +156,8 @@ function formatMonthYear(date) {
     return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
 }
 
-// Load TopoJSON
-d3.json("data/london_topo.json").then(topo => {
+// Load TopoJSON from backend API
+d3.json(`${API_BASE}/map/geojson`).then(topo => {
     const objectName = Object.keys(topo.objects)[0];
     let geojson = topojson.feature(topo, topo.objects[objectName]);
     geojson.features = geojson.features.filter(d => londonBoroughs.includes(d.properties.NAME.trim()));
@@ -269,19 +272,62 @@ d3.json("data/london_topo.json").then(topo => {
         legendG.select(".legend-max").text(fmt(maxV));
     }
 
-    // Load CSV Data
-    d3.csv("data/london_house_data.csv").then(data => {
-        data.forEach(d => {
-            Object.keys(d).forEach(key => {
-                if (key.includes("Price") || key.includes("%Change") || key === "SalesVolume") d[key] = d[key] ? +d[key] : null;
-            });
-            if (d.Date) {
-                const [day, month, year] = d.Date.split("/").map(Number);
-                d.parsedDate = new Date(year < 50 ? 2000 + year : 1900 + year, month - 1, day);
+    // Load CSV Data from backend API
+    fetch(`${API_BASE}/housing/query`)
+        .then(response => response.json())
+        .then(result => {
+            console.log('API Response:', result);
+            const data = result.data;
+            
+            if (!data || data.length === 0) {
+                throw new Error('No data received from API');
             }
-        });
+            
+            console.log('First data row:', data[0]);
+            
+            // Process data - convert numeric fields and parse dates
+            data.forEach(d => {
+                Object.keys(d).forEach(key => {
+                    if (key.includes("Price") || key.includes("%Change") || key === "SalesVolume") {
+                        const val = d[key];
+                        d[key] = (val !== null && val !== undefined && val !== '') ? +val : null;
+                    }
+                });
+                
+                // Find the date field (handle BOM character)
+                const dateField = Object.keys(d).find(key => key.includes('Date'));
+                const dateValue = d[dateField];
+                
+                if (dateValue) {
+                    // Backend may return original format (DD/MM/YY) or standardized (YYYY-MM-DD)
+                    if (dateValue.includes('/')) {
+                        // Parse DD/MM/YY format
+                        const [day, month, year] = dateValue.split("/").map(Number);
+                        const fullYear = year < 50 ? 2000 + year : 1900 + year;
+                        d.parsedDate = new Date(fullYear, month - 1, day);
+                    } else if (dateValue.includes('-')) {
+                        // Parse YYYY-MM-DD format
+                        const parts = dateValue.split("-");
+                        if (parts.length === 3) {
+                            const year = parseInt(parts[0]);
+                            const month = parseInt(parts[1]) - 1;
+                            const day = parseInt(parts[2]);
+                            d.parsedDate = new Date(year, month, day);
+                        }
+                    }
+                }
+            });
+            
+            console.log('Processed first row:', data[0]);
+            
+            // Get the actual date field name (handle BOM in CSV)
+            const dateField = Object.keys(data[0]).find(key => key.includes('Date')) || 'Date';
+            console.log('Date field name:', dateField);
 
         const uniqueDates = Array.from(new Set(data.map(d => d.parsedDate))).filter(d => d).sort((a, b) => a - b);
+        
+        console.log('Unique dates count:', uniqueDates.length);
+        console.log('First few dates:', uniqueDates.slice(0, 5).map(d => d.toString()));
 
         let priceByDate = new Map();
         function buildPriceByDate() {
@@ -371,6 +417,13 @@ d3.json("data/london_topo.json").then(topo => {
 
         function updateMap(dateStr, disableTransition = false) {
             currentMapByRegion = priceByDate.get(dateStr);
+            
+            if (!currentMapByRegion) {
+                console.error('No data found for date:', dateStr);
+                console.log('Available dates:', Array.from(priceByDate.keys()));
+                return;
+            }
+            
             dateLabel.text(dateStr);
 
             const values = Array.from(currentMapByRegion.values()).map(d => d.price).filter(d => d != null && isFinite(d));
@@ -605,8 +658,16 @@ d3.json("data/london_topo.json").then(topo => {
             updateInsight();
         });
 
-    }).catch(err => console.error("CSV load error:", err));
-}).catch(err => console.error("TopoJSON load error:", err));
+    })
+    .catch(err => {
+        console.error("Housing data load error:", err);
+        alert("Failed to load housing data. Please ensure the backend server is running.");
+    });
+})
+.catch(err => {
+    console.error("TopoJSON load error:", err);
+    alert("Failed to load map data. Please ensure the backend server is running.");
+});
 
 // Initial insight update
 updateInsight();
