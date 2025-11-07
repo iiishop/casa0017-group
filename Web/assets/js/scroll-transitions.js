@@ -14,9 +14,9 @@
         scrollHeightMultiplier: 2.5,
         // 多阶段过渡阈值
         stages: {
-            start: 0.1,      // 开始显示全屏容器
-            middle: 0.4,     // 中间状态
-            full: 0.7        // 完全显示
+            start: 0.05,     // 更早开始显示,避免白屏
+            middle: 0.35,    // 中间状态
+            full: 0.65       // 完全显示
         }
     };
 
@@ -43,10 +43,6 @@
         });
 
         setupScrollListener();
-
-        if (CONFIG.debug) {
-            createDebugPanel();
-        }
 
         console.log('Fullscreen breakout initialized');
     }
@@ -242,8 +238,6 @@
             // 应用突破效果
             applyBreakout(sectionData, progress);
         });
-
-        updateDebug();
     }
 
     /**
@@ -287,12 +281,19 @@
 
                 // 移除退出动画类
                 breakoutContainer.classList.remove('exiting');
-                // 显示全屏容器
+                // 先显示全屏容器
                 breakoutContainer.style.display = 'block';
-                // 隐藏原内容
-                contentWrapper.classList.add('has-breakout');
+
+                // 延迟隐藏原内容,确保全屏容器先渲染
+                setTimeout(() => {
+                    contentWrapper.classList.add('has-breakout');
+                }, 50); // 短暂延迟确保平滑过渡
+
                 console.log(`${id} entered stage ${newStage}`);
             } else {
+                // 先显示原内容
+                contentWrapper.classList.remove('has-breakout');
+
                 // 添加退出动画
                 breakoutContainer.classList.add('exiting');
 
@@ -308,84 +309,10 @@
                     breakoutContainer.style.display = 'none';
                     breakoutContainer.classList.remove('exiting');
                 }, 400); // 等待退出动画完成
-                // 显示原内容
-                contentWrapper.classList.remove('has-breakout');
+
                 console.log(`${id} exited breakout`);
             }
         }
-    }    /**
-     * 创建调试面板
-     */
-    function createDebugPanel() {
-        const panel = document.createElement('div');
-        panel.className = 'scroll-debug active';
-
-        let html = '<div class="debug-item" style="border-bottom: 2px solid #fff; padding-bottom: 8px; margin-bottom: 8px;"><strong>Breakout Debug</strong></div>';
-
-        CONFIG.sections.forEach(sectionId => {
-            html += `
-                <div class="debug-item">
-                    <span class="debug-label">${sectionId}:</span>
-                    <span class="debug-value" id="debug-${sectionId}-progress">0%</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="debug-${sectionId}-bar" style="width: 0%"></div>
-                </div>
-                <div class="debug-item">
-                    <span class="debug-label">Stage:</span>
-                    <span class="debug-value" id="debug-${sectionId}-stage">0</span>
-                </div>
-            `;
-        });
-
-        html += `
-            <div class="debug-item" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2);">
-                <span class="debug-label">Scroll:</span>
-                <span class="debug-value" id="debug-scrolly">0</span>
-            </div>
-            <div class="debug-item">
-                <span class="debug-label">Enter:</span>
-                <span class="debug-value">${(CONFIG.stages.start * 100).toFixed(0)}% → ${(CONFIG.stages.full * 100).toFixed(0)}%</span>
-            </div>
-            <div class="debug-item">
-                <span class="debug-label">Exit:</span>
-                <span class="debug-value" style="color: #f90;">90%</span>
-            </div>
-        `;
-
-        panel.innerHTML = html;
-        document.body.appendChild(panel);
-    }
-
-    /**
-     * 更新调试信息
-     */
-    function updateDebug() {
-        if (!CONFIG.debug) return;
-
-        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollYSpan = document.getElementById('debug-scrolly');
-        if (scrollYSpan) {
-            scrollYSpan.textContent = Math.round(scrollY) + 'px';
-        }
-
-        state.sections.forEach(sectionData => {
-            const { id, scrollProgress, currentStage } = sectionData;
-            const progressSpan = document.getElementById(`debug-${id}-progress`);
-            const progressBar = document.getElementById(`debug-${id}-bar`);
-            const stageSpan = document.getElementById(`debug-${id}-stage`);
-
-            if (progressSpan) {
-                progressSpan.textContent = (scrollProgress * 100).toFixed(1) + '%';
-            }
-            if (progressBar) {
-                progressBar.style.width = (scrollProgress * 100) + '%';
-            }
-            if (stageSpan) {
-                stageSpan.textContent = currentStage;
-                stageSpan.style.color = currentStage > 0 ? '#0ff' : '#0f0';
-            }
-        });
     }
 
     // 页面加载后初始化
