@@ -106,6 +106,7 @@
             layoutContainer.className = 'compare-fullscreen-layout';
             layoutContainer.innerHTML = `
                 <div class="controls-area"></div>
+                <div class="insight-area"></div>
                 <div class="map-area"></div>
                 <div class="chart-top"></div>
                 <div class="chart-bottom"></div>
@@ -130,17 +131,20 @@
 
         if (sectionId === 'compare') {
             const topControls = contentWrapper.querySelector('#topControls');
+            const insightContainer = contentWrapper.querySelector('#insightContainer');
             const mapWrapper = contentWrapper.querySelector('#mapWrapper');
             const chartsWrapper = contentWrapper.querySelector('#chartsWrapper');
             const lineChart = chartsWrapper?.querySelector('.chart-container:nth-child(1)');
             const rankChart = chartsWrapper?.querySelector('.chart-container:nth-child(2)');
 
             const controlsArea = layoutContainer.querySelector('.controls-area');
+            const insightArea = layoutContainer.querySelector('.insight-area');
             const mapArea = layoutContainer.querySelector('.map-area');
             const chartTop = layoutContainer.querySelector('.chart-top');
             const chartBottom = layoutContainer.querySelector('.chart-bottom');
 
             if (topControls && controlsArea) controlsArea.appendChild(topControls);
+            if (insightContainer && insightArea) insightArea.appendChild(insightContainer);
             if (mapWrapper && mapArea) mapArea.appendChild(mapWrapper);
             if (lineChart && chartTop) chartTop.appendChild(lineChart);
             if (rankChart && chartBottom) chartBottom.appendChild(rankChart);
@@ -164,6 +168,7 @@
 
         if (sectionId === 'compare') {
             const topControls = layoutContainer.querySelector('#topControls');
+            const insightContainer = layoutContainer.querySelector('#insightContainer');
             const mapWrapper = layoutContainer.querySelector('#mapWrapper');
             const lineChart = layoutContainer.querySelector('.chart-container:nth-child(1)');
             const rankChart = layoutContainer.querySelector('.chart-container:nth-child(2)');
@@ -182,6 +187,8 @@
             if (mapWrapper && visualSection) visualSection.insertBefore(mapWrapper, chartsWrapper);
             if (lineChart && chartsWrapper) chartsWrapper.appendChild(lineChart);
             if (rankChart && chartsWrapper) chartsWrapper.appendChild(rankChart);
+            // 移回insight到chartsWrapper后面
+            if (insightContainer && visualSection) visualSection.appendChild(insightContainer);
         } else if (sectionId === 'find') {
             const suitabilityMap = layoutContainer.querySelector('.suitability-map');
             const suitabilityMetrics = layoutContainer.querySelector('.suitability-metrics');
