@@ -241,6 +241,10 @@
             if (suitabilityMap) suitabilityContainer.appendChild(suitabilityMap);
             if (suitabilityMetrics) suitabilityContainer.appendChild(suitabilityMetrics);
         }
+
+        // 内容已经通过 appendChild 移回原位置
+        // layoutContainer 的子区域会自动变空
+        // 不需要手动清空，保留结构以便下次复用
     }
 
     /**
@@ -321,9 +325,14 @@
 
         // 应用连续的过渡效果
         if (isActive || isExiting) {
-            // 显示容器（但先不移动内容）
-            if (!breakoutContainer.style.display || breakoutContainer.style.display === 'none') {
-                breakoutContainer.style.display = 'block';
+            // 显示容器
+            breakoutContainer.style.display = 'block';
+
+            // 只有在活跃状态才允许鼠标事件，退出状态立即禁用
+            if (isActive) {
+                breakoutContainer.classList.add('active'); // 添加激活类
+            } else {
+                breakoutContainer.classList.remove('active'); // 退出时移除激活类
             }
 
             // 移除所有预定义的stage类
@@ -390,12 +399,9 @@
                 console.log(`${id} content moved back at exit`);
             }
 
-            // 隐藏容器
-            if (breakoutContainer.style.display !== 'none') {
-                setTimeout(() => {
-                    breakoutContainer.style.display = 'none';
-                }, 500);
-            }
+            // 立即隐藏容器，防止阻挡鼠标事件（使用 CSS 类控制）
+            breakoutContainer.style.display = 'none';
+            breakoutContainer.classList.remove('active'); // 移除激活类
         }
 
         sectionData.currentStage = isActive ? 1 : 0;

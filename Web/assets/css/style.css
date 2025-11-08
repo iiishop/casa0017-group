@@ -768,38 +768,7 @@ footer {
   }
 }
 
-/* Fullscreen Button */
-.fullscreen-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #333;
-  font-size: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  z-index: 100;
-}
-
-.fullscreen-btn:hover {
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: scale(1.05);
-}
-
-.fullscreen-btn i {
-  font-size: 22px;
-}
-
-/* Fullscreen mode styles */
+/* Fullscreen mode styles (旧代码，已弃用 - 使用滚动驱动的全屏效果) */
 section.fullscreen-mode {
   position: fixed !important;
   top: 0 !important;

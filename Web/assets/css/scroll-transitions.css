@@ -41,6 +41,8 @@
     background: var(--neutral) !important;
     z-index: 1000 !important;
     overflow: hidden !important;
+    pointer-events: none !important; /* 默认不阻挡鼠标事件 */
+    visibility: hidden !important; /* 默认隐藏 */
     
     /* CSS变量用于JavaScript控制 */
     --transition-scale: 0.7;
@@ -66,6 +68,12 @@
     transform-style: preserve-3d;
     backface-visibility: hidden;
     will-change: transform, filter, opacity;
+}
+
+/* 激活状态 - 允许交互 */
+.fullscreen-breakout.active {
+    pointer-events: auto !important;
+    visibility: visible !important;
 }
 
 /* 添加渐变遮罩增强景深效果 */
@@ -229,6 +237,7 @@
     position: relative;
     z-index: 2; /* 确保在遮罩之上 */
     transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: auto; /* 确保子元素可以接收事件 */
 }
 
 /* 控制栏区域 - 横跨顶部 */
@@ -366,6 +375,7 @@
     position: relative;
     z-index: 2; /* 确保在遮罩之上 */
     transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: auto; /* 确保子元素可以接收事件 */
 }
 
 .find-fullscreen-layout .map-area {
