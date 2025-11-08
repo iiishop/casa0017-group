@@ -173,30 +173,71 @@
             const lineChart = layoutContainer.querySelector('.chart-container:nth-child(1)');
             const rankChart = layoutContainer.querySelector('.chart-container:nth-child(2)');
 
-            // 找到原始位置
-            const visualSection = contentWrapper.querySelector('.visual-section');
-            const chartsWrapper = contentWrapper.querySelector('#chartsWrapper') || document.createElement('div');
-            if (!contentWrapper.querySelector('#chartsWrapper')) {
-                chartsWrapper.id = 'chartsWrapper';
-                chartsWrapper.className = 'charts-wrapper';
-                visualSection?.appendChild(chartsWrapper);
+            // 找到或创建原始容器
+            let visualSection = contentWrapper.querySelector('#visualSection');
+            if (!visualSection) {
+                visualSection = document.createElement('div');
+                visualSection.id = 'visualSection';
             }
 
-            // 移回控制栏到visualSection最前面
-            if (topControls && visualSection) visualSection.insertBefore(topControls, visualSection.firstChild);
-            if (mapWrapper && visualSection) visualSection.insertBefore(mapWrapper, chartsWrapper);
-            if (lineChart && chartsWrapper) chartsWrapper.appendChild(lineChart);
-            if (rankChart && chartsWrapper) chartsWrapper.appendChild(rankChart);
-            // 移回insight到chartsWrapper后面
-            if (insightContainer && visualSection) visualSection.appendChild(insightContainer);
+            let chartsWrapper = visualSection.querySelector('#chartsWrapper');
+            if (!chartsWrapper) {
+                chartsWrapper = document.createElement('div');
+                chartsWrapper.id = 'chartsWrapper';
+            }
+
+            // 重建 visualSection 内部结构
+            // 清空 visualSection
+            visualSection.innerHTML = '';
+
+            // 按顺序添加: mapWrapper -> chartsWrapper
+            if (mapWrapper) visualSection.appendChild(mapWrapper);
+            if (chartsWrapper) visualSection.appendChild(chartsWrapper);
+
+            // 将图表放回 chartsWrapper
+            if (lineChart) chartsWrapper.appendChild(lineChart);
+            if (rankChart) chartsWrapper.appendChild(rankChart);
+
+            // 将内容按原始顺序放回 contentWrapper
+            // 找到参考节点（fullscreen button后面，tooltip前面）
+            const tooltip = contentWrapper.querySelector('.tooltip');
+
+            // 插入 topControls
+            if (topControls && tooltip) {
+                contentWrapper.insertBefore(topControls, tooltip);
+            }
+
+            // 插入 visualSection (在 topControls 后面)
+            if (visualSection && tooltip) {
+                contentWrapper.insertBefore(visualSection, tooltip);
+            }
+
+            // 插入 insightContainer (在 visualSection 后面)
+            if (insightContainer && tooltip) {
+                contentWrapper.insertBefore(insightContainer, tooltip);
+            }
         } else if (sectionId === 'find') {
             const suitabilityMap = layoutContainer.querySelector('.suitability-map');
             const suitabilityMetrics = layoutContainer.querySelector('.suitability-metrics');
 
-            const suitabilityContent = contentWrapper.querySelector('.suitability-content');
+            // 找到或创建原始容器
+            let suitabilityContainer = contentWrapper.querySelector('.suitability-container');
+            if (!suitabilityContainer) {
+                suitabilityContainer = document.createElement('div');
+                suitabilityContainer.className = 'suitability-container';
+                // 插入到 fullscreen button 后面
+                const fullscreenBtn = contentWrapper.querySelector('#findFullscreenBtn');
+                if (fullscreenBtn && fullscreenBtn.nextSibling) {
+                    contentWrapper.insertBefore(suitabilityContainer, fullscreenBtn.nextSibling);
+                } else {
+                    contentWrapper.appendChild(suitabilityContainer);
+                }
+            }
 
-            if (suitabilityMap && suitabilityContent) suitabilityContent.appendChild(suitabilityMap);
-            if (suitabilityMetrics && suitabilityContent) suitabilityContent.appendChild(suitabilityMetrics);
+            // 清空并重建 suitability-container
+            suitabilityContainer.innerHTML = '';
+            if (suitabilityMap) suitabilityContainer.appendChild(suitabilityMap);
+            if (suitabilityMetrics) suitabilityContainer.appendChild(suitabilityMetrics);
         }
     }
 

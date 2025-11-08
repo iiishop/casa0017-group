@@ -13,7 +13,7 @@
     top: 0;
     height: 100vh;
     width: 100%;
-    overflow: visible; /* 允许内容溢出 */
+    overflow: hidden; /* 裁剪超出内容,防止溢出 */
     background: var(--neutral); /* 添加背景色,避免白屏 */
 }
 
@@ -22,7 +22,11 @@
     width: 100%;
     height: 100%;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* 隐藏溢出 */
     transition: opacity 0.5s ease;
+    box-sizing: border-box;
 }
 
 /* 全屏突破容器 - 使用fixed定位真正突破section限制 */
@@ -45,6 +49,127 @@
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.4s ease;
+}
+
+/* Section内部内容响应式适应 */
+.transition-section .section-title {
+    flex-shrink: 0; /* 标题不缩放 */
+    margin-bottom: 15px;
+}
+
+.transition-section .fullscreen-btn {
+    position: absolute; /* 绝对定位,不占用flex空间 */
+}
+
+.transition-section #topControls {
+    flex-shrink: 0; /* 控制栏不缩放 */
+    margin-bottom: 15px;
+}
+
+.transition-section #visualSection {
+    flex: 1; /* 主内容区域占据剩余空间 */
+    min-height: 0; /* 允许flex子元素收缩 */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow: hidden;
+}
+
+.transition-section #mapWrapper {
+    flex: 1; /* 地图占据可用空间 */
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.transition-section #mapWrapper svg {
+    flex: 1;
+    min-height: 0;
+    height: auto !important; /* 覆盖固定高度 */
+    max-height: 100%;
+}
+
+.transition-section #chartsWrapper {
+    flex: 1; /* 图表占据可用空间 */
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow: hidden;
+}
+
+.transition-section .chart-container {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.transition-section .chart-container .chart-title {
+    flex-shrink: 0;
+    margin-bottom: 10px;
+}
+
+.transition-section .chart-container svg {
+    flex: 1;
+    min-height: 0;
+    height: auto !important; /* 覆盖固定高度 */
+    max-height: 100%;
+}
+
+.transition-section .map-controls {
+    flex-shrink: 0;
+    margin-bottom: 10px;
+}
+
+.transition-section .map-hint {
+    flex-shrink: 0;
+    margin-top: 10px;
+}
+
+.transition-section #insightContainer {
+    flex-shrink: 0; /* insight不缩放 */
+}
+
+.transition-section .tooltip {
+    position: absolute; /* 不占用flex空间 */
+}
+
+.transition-section > p {
+    flex-shrink: 0; /* source段落不缩放 */
+    margin-top: 10px;
+}
+
+/* Find section 响应式适应 */
+.transition-section .suitability-container {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    gap: 20px;
+    overflow: hidden;
+}
+
+.transition-section .suitability-map {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.transition-section .suitability-map svg {
+    flex: 1;
+    min-height: 0;
+    height: auto !important;
+    max-height: 100%;
+}
+
+.transition-section .suitability-metrics {
+    flex: 0 0 380px;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 /* Compare section 全屏布局 - 响应式Grid */
