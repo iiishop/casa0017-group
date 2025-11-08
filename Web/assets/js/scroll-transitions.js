@@ -12,11 +12,13 @@
         sections: ['compare', 'find'],
         debug: true,
         scrollHeightMultiplier: 2.5,
-        // 多阶段过渡阈值
+        // 相机推进式过渡 - 平滑的进入和退出
         stages: {
-            start: 0.05,     // 更早开始显示,避免白屏
-            middle: 0.35,    // 中间状态
-            full: 0.65       // 完全显示
+            start: 0.10,     // 10%开始淡入
+            accelerate: 0.25, // 25%加速推进
+            focus: 0.50,     // 50%聚焦清晰
+            settle: 0.75,    // 75%稳定显示
+            exit: 0.90       // 90%开始退出
         }
     };
 
@@ -289,77 +291,125 @@
     }
 
     /**
-     * 应用突破效果
+     * 应用突破效果 - 相机推进式过渡
      */
     function applyBreakout(sectionData, progress) {
         const { id, contentWrapper, breakoutContainer, currentStage, contentMoved } = sectionData;
-        const { start, middle, full } = CONFIG.stages;
+        const { start, accelerate, focus, settle, exit } = CONFIG.stages;
 
-        let newStage = 0;
+        // 计算过渡进度 (0-1)
+        let transitionProgress = 0;
+        let isActive = false;
+        let isExiting = false;
 
-        // 修改逻辑: 在0.1-0.9之间显示全屏,0.9之后退出
-        if (progress >= 0.9) {
-            // 接近100%时退出全屏
-            newStage = 0;
-        } else if (progress >= full) {
-            newStage = 2;
-        } else if (progress >= middle) {
-            newStage = 2; // 也进入完全显示
-        } else if (progress >= start) {
-            newStage = 1;
-        } else {
-            newStage = 0;
+        if (progress < start) {
+            // 未开始
+            transitionProgress = 0;
+            isActive = false;
+        } else if (progress >= start && progress < exit) {
+            // 活跃状态
+            isActive = true;
+            // 将 start 到 settle 的进度映射到 0-1
+            transitionProgress = Math.min((progress - start) / (settle - start), 1);
+        } else if (progress >= exit) {
+            // 退出状态
+            isActive = false;
+            isExiting = true;
+            // 计算退出进度 (90%-100%)
+            transitionProgress = 1 - Math.min((progress - exit) / (1 - exit), 1);
         }
 
-        // 状态变化时才更新
-        if (newStage !== currentStage) {
-            sectionData.currentStage = newStage;
-
-            // 移除所有stage类
-            breakoutContainer.classList.remove('stage-0', 'stage-1', 'stage-2');
-            breakoutContainer.classList.add(`stage-${newStage}`);
-
-            if (newStage > 0) {
-                // 第一次进入全屏时,移动内容
-                if (!sectionData.contentMoved) {
-                    moveContentToBreakout(id, contentWrapper, breakoutContainer);
-                    sectionData.contentMoved = true;
-                    console.log(`${id} content moved to breakout`);
-                }
-
-                // 移除退出动画类
-                breakoutContainer.classList.remove('exiting');
-                // 先显示全屏容器
+        // 应用连续的过渡效果
+        if (isActive || isExiting) {
+            // 显示容器（但先不移动内容）
+            if (!breakoutContainer.style.display || breakoutContainer.style.display === 'none') {
                 breakoutContainer.style.display = 'block';
+            }
 
-                // 延迟隐藏原内容,确保全屏容器先渲染
-                setTimeout(() => {
-                    contentWrapper.classList.add('has-breakout');
-                }, 50); // 短暂延迟确保平滑过渡
+            // 移除所有预定义的stage类
+            breakoutContainer.classList.remove('stage-0', 'stage-1', 'stage-2', 'exiting');
 
-                console.log(`${id} entered stage ${newStage}`);
-            } else {
-                // 先显示原内容
+            // 使用CSS变量控制平滑过渡
+            const easeProgress = easeInOutCubic(transitionProgress);
+
+            // 计算变换值
+            const scale = 0.7 + (easeProgress * 0.3); // 0.7 -> 1.0
+            const translateZ = (1 - easeProgress) * 200; // 200 -> 0
+            const blur = (1 - easeProgress) * 15; // 15px -> 0
+            const opacity = easeProgress; // 0 -> 1
+
+            // 应用变换
+            breakoutContainer.style.setProperty('--transition-scale', scale);
+            breakoutContainer.style.setProperty('--transition-translateZ', `${translateZ}px`);
+            breakoutContainer.style.setProperty('--transition-blur', `${blur}px`);
+            breakoutContainer.style.setProperty('--transition-opacity', opacity);
+
+            // 关键修复：延迟移动内容，等全屏容器足够不透明
+            // 当进度 > 0.35 时（对应 opacity > 0.5），才移动内容
+            if (!sectionData.contentMoved && progress > 0.35 && isActive) {
+                moveContentToBreakout(id, contentWrapper, breakoutContainer);
+                sectionData.contentMoved = true;
+                console.log(`${id} content moved to breakout at progress ${progress.toFixed(2)}`);
+            }
+
+            // 关键修复：一旦进入退出状态，立即恢复内容
+            if (sectionData.contentMoved && isExiting) {
                 contentWrapper.classList.remove('has-breakout');
+                moveContentBack(id, contentWrapper, breakoutContainer);
+                sectionData.contentMoved = false;
+                console.log(`${id} content moved back at progress ${progress.toFixed(2)}`);
+            }
 
-                // 添加退出动画
-                breakoutContainer.classList.add('exiting');
+            // 隐藏原内容（只有在内容已移动且未退出时才隐藏）
+            if (sectionData.contentMoved && !isExiting && easeProgress > 0.2) {
+                contentWrapper.classList.add('has-breakout');
+            } else {
+                contentWrapper.classList.remove('has-breakout');
+            }
 
-                // 退出全屏时,移回内容
-                if (sectionData.contentMoved) {
-                    moveContentBack(id, contentWrapper, breakoutContainer);
-                    sectionData.contentMoved = false;
-                    console.log(`${id} content moved back`);
-                }
+            // 子元素视差效果 - 不同元素不同速度
+            const elements = breakoutContainer.querySelectorAll('.controls-area, .insight-area, .map-area, .chart-top, .chart-bottom, .metrics-area');
+            elements.forEach((el, index) => {
+                const delay = index * 0.05; // 错开0.05
+                const elementProgress = Math.max(0, Math.min(1, (transitionProgress - delay) / (1 - delay)));
+                const elementEase = easeInOutCubic(elementProgress);
 
-                // 隐藏全屏容器
+                const elementY = (1 - elementEase) * 40; // 从下方40px开始
+                const elementOpacity = elementEase;
+
+                el.style.setProperty('--element-y', `${elementY}px`);
+                el.style.setProperty('--element-opacity', elementOpacity);
+            });
+
+        } else {
+            // 完全退出后，确保内容已恢复
+            if (sectionData.contentMoved) {
+                contentWrapper.classList.remove('has-breakout');
+                moveContentBack(id, contentWrapper, breakoutContainer);
+                sectionData.contentMoved = false;
+                console.log(`${id} content moved back at exit`);
+            }
+
+            // 隐藏容器
+            if (breakoutContainer.style.display !== 'none') {
                 setTimeout(() => {
                     breakoutContainer.style.display = 'none';
-                    breakoutContainer.classList.remove('exiting');
-                }, 400); // 等待退出动画完成
-
-                console.log(`${id} exited breakout`);
+                }, 500);
             }
+        }
+
+        sectionData.currentStage = isActive ? 1 : 0;
+    }
+
+    /**
+     * 缓动函数 - 电影式缓入缓出（更平滑的加速和减速）
+     */
+    function easeInOutCubic(t) {
+        // 使用五次方曲线,更接近真实相机运动
+        if (t < 0.5) {
+            return 16 * t * t * t * t * t;
+        } else {
+            return 1 - Math.pow(-2 * t + 2, 5) / 2;
         }
     }
 
