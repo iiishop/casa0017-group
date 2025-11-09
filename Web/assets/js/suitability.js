@@ -32,10 +32,27 @@
     let colorScale;
     let boroughMetrics = {};
 
-    function normalizeValue(value, min, max, invert = false) {
-        const normalized = ((value - min) / (max - min)) * 100;
-        return invert ? 100 - normalized : normalized;
-    }
+    // Robust normalization using percentiles (less sensitive to outliers)
+function normalizeValue(value, values, invert = false) {
+    // Sort and clean data
+    values = values.filter(v => v != null && !isNaN(v)).sort((a, b) => a - b);
+
+    // Use 5th and 95th percentiles as effective min and max
+    const lowerIndex = Math.floor(values.length * 0.05);
+    const upperIndex = Math.floor(values.length * 0.95);
+    const lower = values[lowerIndex];
+    const upper = values[upperIndex];
+
+    // Clamp value to within these bounds
+    const clamped = Math.min(Math.max(value, lower), upper);
+
+    // Normalize to 0–100 scale
+    const normalized = ((clamped - lower) / (upper - lower)) * 100;
+
+    // Invert if lower is better (e.g., commute time)
+    return invert ? 100 - normalized : normalized;
+}
+
 
     async function loadStatsData() {
         try {
@@ -77,19 +94,20 @@
                 londonBoroughs.push(name);
 
                 boroughMetrics[name] = {
-                    commute: normalizeValue(borough.average_time_to_employment_centre_in_minutes, ranges.commute.min, ranges.commute.max, true),
-                    transport: normalizeValue(borough.average_waiting_time_in_minutes, ranges.waiting.min, ranges.waiting.max, true),
-                    parks: normalizeValue(borough.percent_green_plus_blue_area, ranges.green.min, ranges.green.max),
-                    air: normalizeValue(borough.Greenhouse_gas_emissions_per_capita, ranges.emissions.min, ranges.emissions.max, true),
-                    school: normalizeValue(borough.percent_school_outstanding, ranges.school.min, ranges.school.max),
-                    diversity: normalizeValue(borough['number_of_restaurant_cafe,pub'], ranges.restaurant.min, ranges.restaurant.max),
-                    broadband: normalizeValue(borough.percent_coverage_broadband, ranges.broadband.min, ranges.broadband.max),
-                    density: normalizeValue(borough.density_per_kilometer, ranges.density.min, ranges.density.max),
-                    income: normalizeValue(borough.gross_disposable_household_income, ranges.income.min, ranges.income.max),
-                    pay: normalizeValue(borough.gross_median_weekly_pay, ranges.pay.min, ranges.pay.max),
-                    happiness: normalizeValue(borough.happiness_index, ranges.happiness.min, ranges.happiness.max),
-                    supermarket: normalizeValue(borough.supermarket_per_1000, ranges.supermarket.min, ranges.supermarket.max)
-                };
+    commute: normalizeValue(borough.average_time_to_employment_centre_in_minutes, commuteValues, true),
+    transport: normalizeValue(borough.average_waiting_time_in_minutes, waitingValues, true),
+    parks: normalizeValue(borough.percent_green_plus_blue_area, greenValues),
+    air: normalizeValue(borough.Greenhouse_gas_emissions_per_capita, emissionsValues, true),
+    school: normalizeValue(borough.percent_school_outstanding, schoolValues),
+    diversity: normalizeValue(borough['number_of_restaurant_cafe,pub'], restaurantValues),
+    broadband: normalizeValue(borough.percent_coverage_broadband, broadbandValues),
+    density: normalizeValue(borough.density_per_kilometer, densityValues),
+    income: normalizeValue(borough.gross_disposable_household_income, incomeValues),
+    pay: normalizeValue(borough.gross_median_weekly_pay, payValues),
+    happiness: normalizeValue(borough.happiness_index, happinessValues),
+    supermarket: normalizeValue(borough.supermarket_per_1000, supermarketValues)
+};
+
             });
 
             return true;
@@ -231,17 +249,17 @@
               <div>Supermarket: ${metrics.supermarket.toFixed(0)}</div>
             </div>
           `)
-                        const [x, y] = d3.pointer(event, svg.node());
-tooltip
-    .style("left", (x + 20) + "px")
-    .style("top", (y + 20) + "px");
+                    const [x, y] = d3.pointer(event, svg.node());
+                    tooltip
+                        .style("left", (x + 20) + "px")
+                        .style("top", (y + 20) + "px");
                 })
-              .on("mousemove", function (event) {
-    const [x, y] = d3.pointer(event, svg.node());
-    tooltip
-        .style("left", (x + 20) + "px")
-        .style("top", (y + 20) + "px");
-})
+                .on("mousemove", function (event) {
+                    const [x, y] = d3.pointer(event, svg.node());
+                    tooltip
+                        .style("left", (x + 20) + "px")
+                        .style("top", (y + 20) + "px");
+                })
                 .on("mouseout", function () {
                     d3.select(this)
                         .attr("stroke", "#fff")
