@@ -41,7 +41,7 @@
             'tower-hamlets': 129,
             'waltham-forest': 130,
             'wandsworth': 131,
-            'westminster': 132
+            'city-of-westminster': 132
         }
     };
 

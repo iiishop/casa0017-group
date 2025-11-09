@@ -189,7 +189,7 @@ const boroughsData = [
     },
     {
         name: "Westminster",
-        slug: "westminster",
+        slug: "city-of-westminster",
         description: "Home to the Houses of Parliament, Chinatown and London's theatreland",
         imageId: 132
     }
