@@ -1177,3 +1177,67 @@ section.fullscreen-mode .chart-title {
 .suitability-boroughs path:hover {
   opacity: 0.8;
 }
+
+/* === Compare -> same structure feel as Find (NO HTML changes) === */
+#compare #visualSection {
+  display: grid;
+  grid-template-columns: 65% 35%;
+  grid-template-rows: auto auto;
+  gap: 20px;
+  align-items: start;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#compare #insightContainer { grid-column: 1; grid-row: 1; }
+#compare #mapWrapper       { grid-column: 1; grid-row: 2; }
+#compare #chartsWrapper    { grid-column: 2; grid-row: 1 / span 2; }
+
+#compare #chartsWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+
+/* Place items into the grid:
+   - insightContainer (if present) on top-left
+   - mapWrapper under insight (left column)
+   - chartsWrapper spans the whole right column (top to bottom) */
+#compare #insightContainer {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;            /* fit column width, not viewport */
+  max-width: 100%;        /* prevent overflow */
+  justify-self: stretch;  /* ensure it fills its grid column only */
+}
+
+#compare #mapWrapper       { grid-column: 1; grid-row: 2; }
+#compare #chartsWrapper    { grid-column: 2; grid-row: 1 / span 2; }
+
+/* Right column: stack line + rank charts vertically */
+#compare #chartsWrapper {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px;
+  width: 100%;
+  margin: 0; padding: 0;
+}
+
+/* Make sure SVGs fill their boxes */
+#compare #mapWrapper svg,
+#compare #chartsWrapper svg {
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+
+/* Mobile: single column */
+@media (max-width: 992px) {
+  #compare #visualSection {
+    grid-template-columns: 1fr;
+  }
+  #compare #insightContainer { grid-column: 1; grid-row: 1; }
+  #compare #mapWrapper       { grid-column: 1; grid-row: 2; }
+  #compare #chartsWrapper    { grid-column: 1; grid-row: 3; }
+}
